@@ -23,13 +23,29 @@ library
         Data.FingerTree.PQueue,
         Data.FingerTree.Seq
   other-extensions:
-        FlexibleContexts,
-        MultiParamTypeClasses,
-        ViewPatterns,
         DeriveFoldable,
+        FlexibleContexts,
         FlexibleInstances,
-        TypeFamilies
+        MultiParamTypeClasses,
+        TypeFamilies,
+        ViewPatterns
   build-depends:
         base >=4.8 && <5.0
   default-language:
         Haskell2010
+
+Test-Suite FingerTree-test
+  type:
+        exitcode-stdio-1.0
+  hs-source-dirs:
+        .,
+        test
+  main-is:
+        Main.hs
+  other-extensions:
+        TemplateHaskell,
+        ViewPatterns
+  build-depends:
+        base >=4.8 && <5.0,
+        transformers >=0.4 && <1.0,
+        QuickCheck >=2.8 && <3.0
