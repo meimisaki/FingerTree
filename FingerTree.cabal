@@ -4,22 +4,32 @@
 name:                FingerTree
 version:             0.1.0.0
 synopsis:            An implementation of FingerTree for practice
--- description:         
 homepage:            https://github.com/meimisaki/FingerTree
 license:             MIT
 license-file:        LICENSE
 author:              meimisaki
 maintainer:          meimisaki@gmail.com
--- copyright:           
 category:            Data
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.FingerTree, Data.FingerTree.Internal, Data.FingerTree.Lazy, Data.FingerTree.OrdSeq, Data.FingerTree.PQueue, Data.FingerTree.Seq
-  -- other-modules:       
-  other-extensions:    FlexibleContexts, MultiParamTypeClasses, ViewPatterns, DeriveFoldable, FlexibleInstances, TypeFamilies
-  build-depends:       base >=4.7 && <4.8
-  -- hs-source-dirs:      
-  default-language:    Haskell2010
+  exposed-modules:
+        Data.FingerTree,
+        Data.FingerTree.Internal,
+        Data.FingerTree.Lazy,
+        Data.FingerTree.OrdSeq,
+        Data.FingerTree.PQueue,
+        Data.FingerTree.Seq
+  other-extensions:
+        FlexibleContexts,
+        MultiParamTypeClasses,
+        ViewPatterns,
+        DeriveFoldable,
+        FlexibleInstances,
+        TypeFamilies
+  build-depends:
+        base >=4.8 && <5.0
+  default-language:
+        Haskell2010

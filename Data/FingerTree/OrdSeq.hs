@@ -2,7 +2,6 @@
 
 module Data.FingerTree.OrdSeq
 ( OrdSeq (..)
-, isEmpty
 , partition
 , insert
 , deleteAll

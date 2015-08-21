@@ -10,7 +10,6 @@ module Data.FingerTree.Internal
 , Key (..)
 , Measured (..)
 , Deque (..)
-, isEmpty
 , foldMapDeque
 ) where
 
@@ -54,9 +53,6 @@ instance Ord a => Measured (Elem a) (Prio a) where
 instance Measured (Elem a) (Key a) where
     measure (Elem x) = Key x
 
-isEmpty :: Foldable t => t a -> Bool
-isEmpty = not . any (const True)
-
 class Foldable t => Deque t a where
     infixr 5 <|
     (<|) :: a -> t a -> t a
@@ -68,9 +64,9 @@ class Foldable t => Deque t a where
     tailL :: t a -> t a
     headR :: t a -> a
     tailR :: t a -> t a
-    viewL (isEmpty -> True) = Nothing
+    viewL (null -> True) = Nothing
     viewL xs = Just (headL xs, tailL xs)
-    viewR (isEmpty -> True) = Nothing
+    viewR (null -> True) = Nothing
     viewR xs = Just (tailR xs, headR xs)
     headL = fst . fromJust . viewL
     tailL = snd . fromJust . viewL
@@ -79,5 +75,5 @@ class Foldable t => Deque t a where
     {-# MINIMAL (<|), (|>), (viewL | headL, tailL), (viewR | headR, tailR) #-}
 
 foldMapDeque :: (Deque t a, Monoid m) => (a -> m) -> t a -> m
-foldMapDeque f (isEmpty -> True) = mempty
+foldMapDeque f (null -> True) = mempty
 foldMapDeque f xs = f (headL xs) <> foldMapDeque f (tailL xs)
