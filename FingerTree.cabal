@@ -13,6 +13,7 @@ category:            Data
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
+tested-with:         GHC==7.10.1
 
 library
   exposed-modules:
@@ -34,7 +35,7 @@ library
   default-language:
         Haskell2010
 
-Test-Suite FingerTree-test
+test-suite FingerTree-test
   type:
         exitcode-stdio-1.0
   hs-source-dirs:
