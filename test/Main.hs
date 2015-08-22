@@ -9,21 +9,25 @@ import Control.Applicative
 import Control.Monad
 
 import Data.FingerTree
-import Data.Functor.Identity
 import Data.Functor.Compose
+import Data.Functor.Identity
 import qualified Data.List as L
+import Data.Maybe
 import Data.Traversable
 
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 
-import GHC.Exts (fromList)
+import qualified GHC.Exts as Exts
 
 instance (Ord a, Arbitrary a) => Arbitrary (OrdSeq a) where
-    arbitrary = fromList `liftM` arbitrary
+    arbitrary = Exts.fromList `liftM` arbitrary
+
+instance (Ord a, Arbitrary a) => Arbitrary (PQueue a) where
+    arbitrary = Exts.fromList `liftM` arbitrary
 
 instance Arbitrary a => Arbitrary (Seq a) where
-    arbitrary = fromList `liftM` arbitrary
+    arbitrary = Exts.fromList `liftM` arbitrary
 
 instance Show (a -> b) where
     show _ = "(->)"
@@ -42,7 +46,7 @@ prop_OrdSeqMonoidCommutativity xs ys =
 
 prop_OrdSeqIsList :: Ord a => OrdSeq a -> Bool
 prop_OrdSeqIsList xs =
-    fromList (toList xs) == xs
+    Exts.fromList (toList xs) == xs
 
 prop_OrdSeqPartition :: Ord a => a -> OrdSeq a -> Bool
 prop_OrdSeqPartition x xs =
@@ -76,6 +80,41 @@ prop_OrdSeqIntersect xs ys =
             | x > y = intersectList (x:xs) ys
             | otherwise = x:intersectList (drop xs) (drop ys)
                 where drop = dropWhile (== x)
+
+prop_OrdSeqOrdering :: Ord a => OrdSeq a -> Bool
+prop_OrdSeqOrdering xs =
+    map headL ys == toList xs
+    where ys = takeWhile (not . null) (iterate tailL xs)
+
+prop_PQueueMonoidIdentity :: Ord a => PQueue a -> Bool
+prop_PQueueMonoidIdentity xs =
+    mempty <> xs == xs
+
+prop_PQueueMonoidAssociativity :: Ord a => PQueue a -> PQueue a -> PQueue a -> Bool
+prop_PQueueMonoidAssociativity xs ys zs =
+    xs <> (ys <> zs) == (xs <> ys) <> zs
+
+prop_PQueueMonoidCommutativity :: Ord a => PQueue a -> PQueue a -> Bool
+prop_PQueueMonoidCommutativity xs ys =
+    xs <> ys == ys <> xs
+
+prop_PQueueIsList :: Ord a => PQueue a -> Bool
+prop_PQueueIsList xs =
+    Exts.fromList (Exts.toList xs) == xs
+
+prop_PQueuePushPopIdentity :: Ord a => PQueue a -> Bool
+prop_PQueuePushPopIdentity xs =
+    maybe True (== xs) (top xs >>= pop . (`push` xs))
+
+prop_PQueuePopPushIdentity :: Ord a => PQueue a -> Property
+prop_PQueuePopPushIdentity xs =
+    isJust x ==> push (fromJust x) (fromJust (pop xs)) == xs
+    where x = top xs
+
+prop_PQueueOrdering :: Ord a => PQueue a -> Bool
+prop_PQueueOrdering xs =
+    map fromJust (takeWhile isJust ys) == Exts.toList xs
+    where ys = map top (iterate (fromJust . pop) xs)
 
 prop_SeqFunctorIdentity :: Eq a => Seq a -> Bool
 prop_SeqFunctorIdentity xs =
@@ -147,7 +186,7 @@ prop_SeqMonoidAssociativity xs ys zs =
 
 prop_SeqIsList :: Eq a => [a] -> Bool
 prop_SeqIsList xs =
-    toList ((fromList :: [a] -> Seq a) xs) == xs
+    toList ((Exts.fromList :: [a] -> Seq a) xs) == xs
 
 prop_SeqSplit :: Eq a => Seq a -> Property
 prop_SeqSplit xs = n > 0 ==> (monadic' $ do

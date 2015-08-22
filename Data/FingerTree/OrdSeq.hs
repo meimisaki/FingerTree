@@ -1,14 +1,19 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Data.FingerTree.OrdSeq
 ( OrdSeq (..)
+, Deque (..)
 , partition
 , insert
 , deleteAll
 , merge
 , intersect
 ) where
+
+import Control.Arrow
 
 import Data.FingerTree.Internal
 import Data.FingerTree.Lazy
@@ -24,6 +29,12 @@ instance Show a => Show (OrdSeq a) where
 
 instance Foldable OrdSeq where
     foldMap f = foldMap (f . getElem) . getOrdSeq
+
+instance Ord a => Deque OrdSeq a where
+    (<|) = insert
+    (|>) = flip insert
+    viewL = fmap (getElem *** OrdSeq) . viewL . getOrdSeq
+    viewR = fmap (OrdSeq *** getElem) . viewR . getOrdSeq
 
 instance Ord a => Monoid (OrdSeq a) where
     mempty = OrdSeq mempty
