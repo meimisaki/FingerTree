@@ -11,6 +11,7 @@ import Control.Monad
 import Data.FingerTree
 import Data.Functor.Identity
 import Data.Functor.Compose
+import qualified Data.List as L
 import Data.Traversable
 
 import Test.QuickCheck
@@ -18,11 +19,63 @@ import Test.QuickCheck.Monadic
 
 import GHC.Exts (fromList)
 
+instance (Ord a, Arbitrary a) => Arbitrary (OrdSeq a) where
+    arbitrary = fromList `liftM` arbitrary
+
 instance Arbitrary a => Arbitrary (Seq a) where
     arbitrary = fromList `liftM` arbitrary
 
 instance Show (a -> b) where
     show _ = "(->)"
+
+prop_OrdSeqMonoidIdentity :: Ord a => OrdSeq a -> Bool
+prop_OrdSeqMonoidIdentity xs =
+    mempty <> xs == xs
+
+prop_OrdSeqMonoidAssociativity :: Ord a => OrdSeq a -> OrdSeq a -> OrdSeq a -> Bool
+prop_OrdSeqMonoidAssociativity xs ys zs =
+    xs <> (ys <> zs) == (xs <> ys) <> zs
+
+prop_OrdSeqMonoidCommutativity :: Ord a => OrdSeq a -> OrdSeq a -> Bool
+prop_OrdSeqMonoidCommutativity xs ys =
+    xs <> ys == ys <> xs
+
+prop_OrdSeqIsList :: Ord a => OrdSeq a -> Bool
+prop_OrdSeqIsList xs =
+    fromList (toList xs) == xs
+
+prop_OrdSeqPartition :: Ord a => a -> OrdSeq a -> Bool
+prop_OrdSeqPartition x xs =
+    l <> r == xs && all (< x) l && all (>= x) r
+    where (l, r) = partition x xs
+
+prop_OrdSeqInsert :: Ord a => a -> OrdSeq a -> Bool
+prop_OrdSeqInsert x xs =
+    toList (insert x xs) == L.insert x (toList xs)
+
+prop_OrdSeqDeleteAll :: Ord a => a -> OrdSeq a -> Bool
+prop_OrdSeqDeleteAll x xs =
+    toList (deleteAll x xs) == [a | a <- toList xs, a /= x]
+
+prop_OrdSeqMerge :: Ord a => OrdSeq a -> OrdSeq a -> Bool
+prop_OrdSeqMerge xs ys =
+    toList (merge xs ys) == mergeList (toList xs) (toList ys)
+    where mergeList [] ys = ys
+          mergeList xs [] = xs
+          mergeList (x:xs) (y:ys)
+            | x < y = x:mergeList xs (y:ys)
+            | otherwise = y:mergeList (x:xs) ys
+
+prop_OrdSeqIntersect :: Ord a => OrdSeq a -> OrdSeq a -> Bool
+prop_OrdSeqIntersect xs ys =
+    toList (intersect xs ys) == intersectList (toList xs) (toList ys)
+    where intersectList [] _ = []
+          intersectList _ [] = []
+          intersectList (x:xs) (y:ys)
+            | x < y = intersectList xs (y:ys)
+            | x > y = intersectList (x:xs) ys
+            | otherwise = x:intersectList (drop xs) (drop ys)
+                where drop = dropWhile (== x)
 
 prop_SeqFunctorIdentity :: Eq a => Seq a -> Bool
 prop_SeqFunctorIdentity xs =

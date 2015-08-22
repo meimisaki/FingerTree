@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Data.FingerTree.OrdSeq
 ( OrdSeq (..)
@@ -28,6 +29,12 @@ instance Ord a => Monoid (OrdSeq a) where
     mempty = OrdSeq mempty
     mappend = merge
 
+instance Eq a => Eq (OrdSeq a) where
+    xs == ys = toList xs == toList ys
+
+instance Ord a => Ord (OrdSeq a) where
+    compare xs ys = compare (toList xs) (toList ys)
+
 instance Ord a => Exts.IsList (OrdSeq a) where
     type Item (OrdSeq a) = a
     fromList = OrdSeq . fromFoldable . map Elem . sort
@@ -48,16 +55,15 @@ deleteAll x (OrdSeq xs) = OrdSeq (l <> r)
 
 merge :: Ord a => OrdSeq a -> OrdSeq a -> OrdSeq a
 merge (OrdSeq xs) (OrdSeq ys) = OrdSeq (merge' xs ys)
-    where merge' xs ys = case viewL ys of
-            Nothing -> xs
-            Just (z, zs) -> l <> (z <| merge' zs r)
-                where (l, r) = split (> measure z) xs
+    where merge' xs (null -> True) = xs
+          merge' xs (viewL -> Just (y, ys)) = l <> (y <| merge' ys r)
+            where (l, r) = split (> measure y) xs
 
 intersect :: Ord a => OrdSeq a -> OrdSeq a -> OrdSeq a
 intersect (OrdSeq xs) (OrdSeq ys) = OrdSeq (intersect' xs ys)
-    where intersect' xs ys = case viewL ys of
-            Nothing -> mempty
-            Just (z, zs) -> l <> intersect' zs r
-                where (_, m) = split (>= k) xs
-                      (l, r) = split (> k) m
-                      k = measure z
+    where intersect' xs (null -> True) = mempty
+          intersect' xs (viewL -> Just (y, ys)) = if null l then zs else y <| zs
+            where zs = intersect' ys r
+                  (_, m) = split (>= k) xs
+                  (l, r) = split (> k) m
+                  k = measure y
