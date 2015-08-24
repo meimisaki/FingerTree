@@ -5,9 +5,10 @@
 
 module Data.FingerTree.OrdSeq
 ( OrdSeq (..)
-, Deque (..)
+, Unfoldable (..)
+, MinView (..)
+, MaxView (..)
 , partition
-, insert
 , deleteAll
 , merge
 , intersect
@@ -30,11 +31,15 @@ instance Show a => Show (OrdSeq a) where
 instance Foldable OrdSeq where
     foldMap f = foldMap (f . getElem) . getOrdSeq
 
-instance Ord a => Deque OrdSeq a where
-    (<|) = insert
-    (|>) = flip insert
-    viewL = fmap (getElem *** OrdSeq) . viewL . getOrdSeq
-    viewR = fmap (OrdSeq *** getElem) . viewR . getOrdSeq
+instance Ord a => Unfoldable OrdSeq a where
+    insert x (OrdSeq xs) = OrdSeq (l <> (Elem x <| r))
+        where (l, r) = split (>= Key x) xs
+
+instance Ord a => MinView OrdSeq a where
+    minView = fmap (getElem *** OrdSeq) . viewL . getOrdSeq
+
+instance Ord a => MaxView OrdSeq a where
+    maxView = fmap (OrdSeq *** getElem) . viewR . getOrdSeq
 
 instance Ord a => Monoid (OrdSeq a) where
     mempty = OrdSeq mempty
@@ -53,10 +58,6 @@ instance Ord a => Exts.IsList (OrdSeq a) where
 
 partition :: Ord a => a -> OrdSeq a -> (OrdSeq a, OrdSeq a)
 partition x (OrdSeq xs) = (OrdSeq l, OrdSeq r)
-    where (l, r) = split (>= Key x) xs
-
-insert :: Ord a => a -> OrdSeq a -> OrdSeq a
-insert x (OrdSeq xs) = OrdSeq (l <> (Elem x <| r))
     where (l, r) = split (>= Key x) xs
 
 deleteAll :: Ord a => a -> OrdSeq a -> OrdSeq a

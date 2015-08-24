@@ -32,6 +32,16 @@ instance Arbitrary a => Arbitrary (Seq a) where
 instance Show (a -> b) where
     show _ = "(->)"
 
+prop_OrdSeqMinViewIdentity :: Ord a => OrdSeq a -> Bool
+prop_OrdSeqMinViewIdentity xs = case minView xs of
+    Nothing -> True
+    Just (x, ys) -> insert x ys == deleteMin (insert x xs)
+
+prop_OrdSeqMaxViewIdentity :: Ord a => OrdSeq a -> Bool
+prop_OrdSeqMaxViewIdentity xs = case maxView xs of
+    Nothing -> True
+    Just (ys, x) -> insert x ys == deleteMax (insert x xs)
+
 prop_OrdSeqMonoidIdentity :: Ord a => OrdSeq a -> Bool
 prop_OrdSeqMonoidIdentity xs =
     mempty <> xs == xs
@@ -83,8 +93,13 @@ prop_OrdSeqIntersect xs ys =
 
 prop_OrdSeqOrdering :: Ord a => OrdSeq a -> Bool
 prop_OrdSeqOrdering xs =
-    map headL ys == toList xs
-    where ys = takeWhile (not . null) (iterate tailL xs)
+    map (fst . fromJust) (takeWhile isJust ys) == toList xs
+    where ys = iterate (>>= minView . snd) (minView xs)
+
+prop_PQueueMaxViewIdentity :: Ord a => PQueue a -> Bool
+prop_PQueueMaxViewIdentity xs = case maxView xs of
+    Nothing -> True
+    Just (ys, x) -> insert x ys == deleteMax (insert x xs)
 
 prop_PQueueMonoidIdentity :: Ord a => PQueue a -> Bool
 prop_PQueueMonoidIdentity xs =
@@ -102,19 +117,10 @@ prop_PQueueIsList :: Ord a => PQueue a -> Bool
 prop_PQueueIsList xs =
     Exts.fromList (Exts.toList xs) == xs
 
-prop_PQueuePushPopIdentity :: Ord a => PQueue a -> Bool
-prop_PQueuePushPopIdentity xs =
-    maybe True (== xs) (top xs >>= pop . (`push` xs))
-
-prop_PQueuePopPushIdentity :: Ord a => PQueue a -> Property
-prop_PQueuePopPushIdentity xs =
-    isJust x ==> push (fromJust x) (fromJust (pop xs)) == xs
-    where x = top xs
-
 prop_PQueueOrdering :: Ord a => PQueue a -> Bool
 prop_PQueueOrdering xs =
-    map fromJust (takeWhile isJust ys) == Exts.toList xs
-    where ys = map top (iterate (fromJust . pop) xs)
+    map (snd . fromJust) (takeWhile isJust ys) == Exts.toList xs
+    where ys = iterate (>>= maxView . fst) (maxView xs)
 
 prop_SeqFunctorIdentity :: Eq a => Seq a -> Bool
 prop_SeqFunctorIdentity xs =

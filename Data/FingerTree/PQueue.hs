@@ -1,10 +1,12 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Data.FingerTree.PQueue
 ( PQueue (..)
-, top
-, push
-, pop
+, Unfoldable (..)
+, MinView (..)
+, MaxView (..)
 ) where
 
 import Data.FingerTree.Internal
@@ -18,6 +20,16 @@ newtype PQueue a = PQueue { getPQueue :: FingerTree (Prio a) (Elem a) }
 
 instance (Ord a, Show a) => Show (PQueue a) where
     show = show . Exts.toList
+
+instance Ord a => Unfoldable PQueue a where
+    insert x (PQueue xs) = PQueue (Elem x <| xs)
+
+instance Ord a => MaxView PQueue a where
+    maxView (PQueue xs)
+        | null xs = fail ""
+        | otherwise = return (PQueue (l <> r), x)
+        where Split l _ r = splitTree (Prio x <=) mempty xs
+              Prio x = measure xs
 
 instance Ord a => Monoid (PQueue a) where
     mempty = PQueue mempty
@@ -33,17 +45,3 @@ instance Ord a => Exts.IsList (PQueue a) where
     type Item (PQueue a) = a
     fromList = PQueue . fromFoldable . map Elem
     toList = reverse . sort . map getElem . toList . getPQueue
-
-top :: Ord a => PQueue a -> Maybe a
-top (PQueue xs) = if null xs
-    then Nothing
-    else let Prio x = (measure xs) in Just x
-
-push :: Ord a => a -> PQueue a -> PQueue a
-push x (PQueue xs) = PQueue (Elem x <| xs)
-
-pop :: Ord a => PQueue a -> Maybe (PQueue a)
-pop (PQueue xs) = if null xs
-    then Nothing
-    else Just (PQueue (l <> r))
-    where Split l _ r = splitTree (measure xs <=) mempty xs

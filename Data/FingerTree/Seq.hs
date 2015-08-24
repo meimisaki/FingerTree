@@ -47,6 +47,7 @@ instance Applicative Seq where
 instance Monad Seq where
     return = (<| mempty)
     (>>=) = flip foldMap
+    fail _ = mempty
 
 instance Foldable Seq where
     foldMap f = foldMap (f . getElem) . getSeq

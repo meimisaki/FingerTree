@@ -11,6 +11,9 @@ module Data.FingerTree.Internal
 , Measured (..)
 , Deque (..)
 , foldMapDeque
+, Unfoldable (..)
+, MinView (..)
+, MaxView (..)
 ) where
 
 import Prelude hiding (any)
@@ -58,16 +61,16 @@ class Foldable t => Deque t a where
     (<|) :: a -> t a -> t a
     infixl 5 |>
     (|>) :: t a -> a -> t a
-    viewL :: t a -> Maybe (a, t a)
-    viewR :: t a -> Maybe (t a, a)
+    viewL :: Monad m => t a -> m (a, t a)
+    viewR :: Monad m => t a -> m (t a, a)
     headL :: t a -> a
     tailL :: t a -> t a
     headR :: t a -> a
     tailR :: t a -> t a
-    viewL (null -> True) = Nothing
-    viewL xs = Just (headL xs, tailL xs)
-    viewR (null -> True) = Nothing
-    viewR xs = Just (tailR xs, headR xs)
+    viewL (null -> True) = fail ""
+    viewL xs = return (headL xs, tailL xs)
+    viewR (null -> True) = fail ""
+    viewR xs = return (tailR xs, headR xs)
     headL = fst . fromJust . viewL
     tailL = snd . fromJust . viewL
     headR = snd . fromJust . viewR
@@ -77,3 +80,22 @@ class Foldable t => Deque t a where
 foldMapDeque :: (Deque t a, Monoid m) => (a -> m) -> t a -> m
 foldMapDeque f (null -> True) = mempty
 foldMapDeque f xs = f (headL xs) <> foldMapDeque f (tailL xs)
+
+class Unfoldable t a where
+    insert :: a -> t a -> t a
+
+class Ord a => MinView t a where
+    minView :: Monad m => t a -> m (a, t a)
+    minElem :: t a -> a
+    deleteMin :: t a -> t a
+    minElem = fst . fromJust . minView
+    deleteMin = snd . fromJust . minView
+    {-# MINIMAL minView #-}
+
+class Ord a => MaxView t a where
+    maxView :: Monad m => t a -> m (t a, a)
+    maxElem :: t a -> a
+    deleteMax :: t a -> t a
+    maxElem = snd . fromJust . maxView
+    deleteMax = fst . fromJust . maxView
+    {-# MINIMAL maxView #-}
